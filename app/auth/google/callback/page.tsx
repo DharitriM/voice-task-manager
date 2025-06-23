@@ -35,16 +35,19 @@ export default function GoogleCallbackPage() {
           // Send success message to parent window
           window.opener?.postMessage({ type: "GOOGLE_AUTH_SUCCESS" }, window.location.origin)
           window.close()
-        } catch (error) {
-          // Send error message to parent window
-          window.opener?.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, window.location.origin)
+        } catch (error: any) {
+          console.error("Google OAuth callback error:", error?.response?.data || error.message)
+          window.opener?.postMessage(
+            { type: "GOOGLE_AUTH_ERROR", error: error?.response?.data?.message || error.message },
+            window.location.origin
+          )
           window.close()
         }
       }
     }
 
     handleCallback()
-  }, [searchParams])
+  }, [])
 
   return (
     <div className="min-h-screen flex items-center justify-center">

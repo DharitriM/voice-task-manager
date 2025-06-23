@@ -59,7 +59,7 @@ export default function AuthPage() {
   }
 
   return (
-    <div className="flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 p-4 min-h-[calc(100vh-120px)]">
+    <div className="flex items-center justify-center p-4 min-h-[calc(100vh-120px)]">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Voice Task Manager</CardTitle>
