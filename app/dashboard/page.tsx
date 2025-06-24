@@ -12,6 +12,7 @@ import { VoiceCommands } from "@/components/voice-commands"
 import { NotificationSystem } from "@/components/notification-system"
 import { GoogleCalendarIntegration } from "@/components/google-calendar-integration"
 import { GoogleCalendarDebug } from "@/components/google-calendar-debug"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 
@@ -30,6 +31,7 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [user, setUser] = useState<any>(null)
+   const [isSlideOpen, setIsSlideOpen] = useState<boolean>(false)
   const router = useRouter()
 
   // Add state for Google Calendar connection
@@ -49,7 +51,7 @@ export default function Dashboard() {
     }
 
     fetchTasks()
-  }, [router])
+  }, [])
 
   const fetchTasks = async () => {
     try {
@@ -81,6 +83,7 @@ export default function Dashboard() {
       })
 
       setTasks(tasks.filter((task) => task._id !== taskId))
+      await fetchTasks()
       toast({
         title: "Success",
         description: "Task deleted successfully",
@@ -139,8 +142,10 @@ export default function Dashboard() {
         headers: { Authorization: `Bearer ${token}` },
       })
 
-      setTasks([response.data.task, ...tasks])
+      // setTasks([response.data.task, ...tasks])
+      // await syncTaskWithGoogleCalendar(response.data.task)
       await syncTaskWithGoogleCalendar(response.data.task)
+      await fetchTasks()
     } catch (error: any) {
       toast({
         title: "Error",
@@ -165,7 +170,7 @@ export default function Dashboard() {
       console.error("Failed to sync with Google Calendar:", error)
     }
   }
-
+console.log({tasks})
   return (
     <div>
       <header className="bg-gray-50 shadow-sm border-b">
@@ -215,6 +220,34 @@ export default function Dashboard() {
         >
           <Plus className="w-6 h-6" />
         </Button>
+        {/* <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+              aria-label="Add"
+            >
+              <Plus className="w-6 h-6" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="left" align="end" className="w-35 mr-[-4px] bg-black text-white">
+            <DropdownMenuItem className="cursor-pointer bg-black text-white h-6"
+              onClick={() => {
+                // Google Task logic
+                console.log("Create Task clicked")
+              }}
+            >
+              📝 Create Task
+            </DropdownMenuItem>
+            <DropdownMenuItem className="cursor-pointer bg-black text-white h-6"
+              onClick={() => {
+                setEditingTask(null)
+                setIsModalOpen(true)
+              }}
+            >
+              📅 Create Event
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu> */}
 
         <TaskModal
           isOpen={isModalOpen}
@@ -224,6 +257,7 @@ export default function Dashboard() {
           }}
           onTaskCreated={fetchTasks}
           editingTask={editingTask}
+          setEditingTask={setEditingTask}
         />
         <VoiceCommands tasks={tasks} onDeleteTask={handleDeleteTask} onCreateTask={handleVoiceCreateTask} />
         <NotificationSystem tasks={tasks} />

@@ -41,6 +41,7 @@ const taskSchema = new mongoose.Schema({
     default: "todo",
   },
   scheduledTime: { type: Date },
+  // googleTaskId: { type: String },
   googleEventId: { type: String }, // Store Google Calendar event ID
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
@@ -125,6 +126,34 @@ const createGoogleCalendarEvent = async (user, task) => {
   }
 }
 
+const createGoogleTask = async (user, task) => {
+  try {
+    if (!user.googleAccessToken) return null
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+    })
+
+    const tasks = google.tasks({ version: "v1", auth: oauth2Client })
+
+    const response = await tasks.tasks.insert({
+      tasklist: "@default",
+      requestBody: {
+        title: task.title,
+        notes: task.description,
+        due: task.scheduledTime ? new Date(task.scheduledTime).toISOString() : undefined,
+      },
+    })
+
+    console.log("Google Task created:", response.data.id)
+    return response.data.id
+  } catch (error) {
+    console.error("Error creating Google Task:", error.response?.data || error.message)
+    return null
+  }
+}
+
 // Add helper function for task colors
 const getTaskColorId = (status) => {
   switch (status) {
@@ -152,7 +181,12 @@ const updateGoogleCalendarEvent = async (user, task) => {
 
     const calendar = google.calendar({ version: "v3", auth: oauth2Client })
 
-    const startTime = new Date(task.scheduledTime)
+    // const startTime = new Date(task.scheduledTime)
+    // const endTime = new Date(startTime.getTime() + 60 * 60 * 1000)
+    const startTime = task.scheduledTime
+      ? new Date(task.scheduledTime)
+      : new Date(Date.now() + 5.5 * 60 * 60 * 1000)
+
     const endTime = new Date(startTime.getTime() + 60 * 60 * 1000)
 
     const event = {
@@ -181,6 +215,40 @@ const updateGoogleCalendarEvent = async (user, task) => {
   }
 }
 
+const updateGoogleTask = async (user, task) => {
+  try {
+    if (!user.googleAccessToken || !task.googleTaskId) return
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+    })
+
+    const tasks = google.tasks({ version: "v1", auth: oauth2Client })
+
+    const updates = {
+      title: task.title,
+      notes: `${task.description}\n\nStatus: ${task.status}\nUpdated via Voice Task Manager`,
+    }
+
+    // Optional due date (Tasks API uses RFC 3339 format)
+    if (task.scheduledTime) {
+      updates.due = new Date(task.scheduledTime).toISOString()
+    }
+
+    const response = await tasks.tasks.update({
+      tasklist: "@default",
+      task: task.googleTaskId,
+      requestBody: updates,
+    })
+
+    console.log("Google Task updated:", response.data.id)
+  } catch (error) {
+    console.error("Error updating Google Task:", error.response?.data || error.message)
+  }
+}
+
+
 const deleteGoogleCalendarEvent = async (user, eventId) => {
   try {
     if (!user.googleAccessToken || !eventId) return
@@ -200,6 +268,29 @@ const deleteGoogleCalendarEvent = async (user, eventId) => {
     console.error("Error deleting Google Calendar event:", error)
   }
 }
+
+const deleteGoogleTask = async (user, taskId) => {
+  try {
+    if (!user.googleAccessToken || !taskId) return
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+    })
+
+    const tasks = google.tasks({ version: "v1", auth: oauth2Client })
+
+    await tasks.tasks.delete({
+      tasklist: "@default",
+      task: taskId,
+    })
+
+    console.log("Google Task deleted:", taskId)
+  } catch (error) {
+    console.error("Error deleting Google Task:", error.response?.data || error.message)
+  }
+}
+
 
 // Auth Routes
 app.post("/api/auth/register", async (req, res) => {
@@ -276,6 +367,7 @@ app.get("/api/auth/google", (req, res) => {
     access_type: "offline",
     prompt: "consent",
     scope: ["https://www.googleapis.com/auth/calendar"],
+    // scope: ["https://www.googleapis.com/auth/tasks"],
   })
   res.json({ authUrl })
 })
@@ -349,7 +441,7 @@ app.post("/api/tasks", authenticateToken, async (req, res) => {
       userId: req.user.userId,
       title,
       description,
-      scheduledTime: scheduledTime ? new Date(scheduledTime) : null,
+      scheduledTime: scheduledTime !== "" ? new Date(scheduledTime) : new Date(),
     })
 
     await task.save()
@@ -363,6 +455,13 @@ app.post("/api/tasks", authenticateToken, async (req, res) => {
         await task.save()
       }
     }
+    // if (user) {
+    //   const googleTaskId = await createGoogleTask(user, task)
+    //   if (googleTaskId) {
+    //     task.googleTaskId = googleTaskId;
+    //     await task.save()
+    //   }
+    // }
 
     res.status(201).json({ message: "Task created successfully", task })
   } catch (error) {
@@ -425,6 +524,18 @@ app.put("/api/tasks/:id", authenticateToken, async (req, res) => {
       }
     }
 
+    // if (user) {
+    //   if (updatedTask.googleTaskId) {
+    //     await updateGoogleTask(user, updatedTask)
+    //   } else {
+    //     const googleTaskId = await createGoogleTask(user, updatedTask)
+    //     if (googleTaskId) {
+    //       updatedTask.googleTaskId = googleTaskId
+    //       await updatedTask.save()
+    //     }
+    //   }
+    // }
+
     res.json({ message: "Task updated successfully", task: updatedTask })
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message })
@@ -440,13 +551,42 @@ app.delete("/api/tasks/:id", authenticateToken, async (req, res) => {
       return res.status(404).json({ message: "Task not found" })
     }
 
+    const user = await User.findById(req.user.userId);
+
+    // Patch event before deleting (for immediate visual update)
+    if (task.googleEventId && user) {
+      oauth2Client.setCredentials({
+        access_token: user.googleAccessToken,
+        refresh_token: user.googleRefreshToken,
+      });
+
+      const calendar = google.calendar({ version: "v3", auth: oauth2Client });
+
+      // Patch the event to indicate it will be deleted
+      await calendar.events.patch({
+        calendarId: "primary",
+        eventId: task.googleEventId,
+        requestBody: {
+          description: `${task.description}\n\n[This task has been deleted]`,
+        },
+      });
+
+      // Short delay to allow UI to reflect the patch
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
     // Delete Google Calendar event
-    if (task.googleEventId) {
-      const user = await User.findById(req.user.userId)
-      if (user) {
-        await deleteGoogleCalendarEvent(user, task.googleEventId)
+      if (task.googleEventId) {
+        const user = await User.findById(req.user.userId)
+        if (user) {
+          await deleteGoogleCalendarEvent(user, task.googleEventId)
+        }
       }
     }
+
+    // Delete Google Task if exists
+    // if (task.googleTaskId && user) {
+    //   await deleteGoogleTask(user, task.googleTaskId);
+    // }
 
     await Task.findByIdAndDelete(id)
 
@@ -510,6 +650,80 @@ app.get("/api/calendar/test", authenticateToken, async (req, res) => {
     })
   }
 })
+
+app.post("/api/google-tasks", authenticateToken, async (req, res) => {
+  try {
+    const { title, description, scheduledTime } = req.body
+
+    if (!title || !description) {
+      return res.status(400).json({ message: "Title and description are required" })
+    }
+
+    const user = await User.findById(req.user.userId)
+    if (!user) return res.status(404).json({ message: "User not found" })
+
+    const taskId = await createGoogleTask(user, { title, description, scheduledTime })
+    if (!taskId) return res.status(500).json({ message: "Failed to create Google Task" })
+
+    res.status(201).json({ message: "Google Task created successfully", taskId })
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message })
+  }
+})
+
+app.put("/api/google-tasks/:taskId", authenticateToken, async (req, res) => {
+  try {
+    const { taskId } = req.params
+    const { title, description, scheduledTime } = req.body
+
+    const user = await User.findById(req.user.userId)
+    if (!user?.googleAccessToken) return res.status(400).json({ message: "Google account not connected" })
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+    })
+
+    const tasks = google.tasks({ version: "v1", auth: oauth2Client })
+    const updates = {
+      title,
+      notes: description,
+      due: scheduledTime ? new Date(scheduledTime).toISOString() : undefined,
+    }
+
+    const response = await tasks.tasks.update({
+      tasklist: "@default",
+      task: taskId,
+      requestBody: updates,
+    })
+
+    res.json({ message: "Google Task updated successfully", updatedTask: response.data })
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update Google Task", error: error.message })
+  }
+})
+
+app.delete("/api/google-tasks/:taskId", authenticateToken, async (req, res) => {
+  try {
+    const { taskId } = req.params
+
+    const user = await User.findById(req.user.userId)
+    if (!user?.googleAccessToken) return res.status(400).json({ message: "Google account not connected" })
+
+    oauth2Client.setCredentials({
+      access_token: user.googleAccessToken,
+      refresh_token: user.googleRefreshToken,
+    })
+
+    const tasks = google.tasks({ version: "v1", auth: oauth2Client })
+    await tasks.tasks.delete({ tasklist: "@default", task: taskId })
+
+    res.json({ message: "Google Task deleted successfully" })
+  } catch (error) {
+    res.status(500).json({ message: "Failed to delete Google Task", error: error.message })
+  }
+})
+
 
 const PORT = process.env.PORT || 5000
 app.listen(PORT, () => {

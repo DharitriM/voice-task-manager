@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Mic, MicOff } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
@@ -19,8 +19,13 @@ declare global {
 }
 
 export function VoiceCommands({ tasks, onDeleteTask, onCreateTask }: VoiceCommandsProps) {
+  const tasksRef = useRef(tasks);
   const [isListening, setIsListening] = useState(false)
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
+
+  useEffect(() => {
+    tasksRef.current = tasks
+  }, [tasks])
 
   useEffect(() => {
     if (typeof window !== "undefined" && "webkitSpeechRecognition" in window) {
@@ -74,7 +79,9 @@ export function VoiceCommands({ tasks, onDeleteTask, onCreateTask }: VoiceComman
     }
   }
 
-  const handleDeleteCommand = (transcript: string) => {
+  const handleDeleteCommand = async (transcript: string) => {
+    console.log("on command delete", tasks)
+    // debugger
     // Extract task name from command
     let taskName = ""
 
@@ -94,12 +101,12 @@ export function VoiceCommands({ tasks, onDeleteTask, onCreateTask }: VoiceComman
     }
 
     // Find matching task
-    const matchingTask = tasks.find(
+    const matchingTask = tasksRef.current.find(
       (task) => task.title.toLowerCase().includes(taskName) || taskName.includes(task.title.toLowerCase()),
     )
 
     if (matchingTask) {
-      onDeleteTask(matchingTask._id)
+      await onDeleteTask(matchingTask._id)
       toast({
         title: "Task deleted",
         description: `Deleted task: ${matchingTask.title}`,
@@ -111,9 +118,10 @@ export function VoiceCommands({ tasks, onDeleteTask, onCreateTask }: VoiceComman
         variant: "destructive",
       })
     }
+    await stopListening()
   }
 
-  const handleCreateCommand = (transcript: string) => {
+  const handleCreateCommand = async (transcript: string) => {
     let taskDescription = ""
 
     if (transcript.includes("create task")) {
@@ -128,10 +136,14 @@ export function VoiceCommands({ tasks, onDeleteTask, onCreateTask }: VoiceComman
       const words = taskDescription.split(" ")
       const title = words.slice(0, 5).join(" ")
 
-      onCreateTask({
+      await onCreateTask({
         title,
         description: taskDescription,
+        status: "todo",
+        scheduledTime: new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().slice(0, 16) ?? "",
       })
+
+      await stopListening()
 
       toast({
         title: "Task created",

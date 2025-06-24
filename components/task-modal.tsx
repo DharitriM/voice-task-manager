@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Mic, MicOff } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import axios from "axios"
+import { toISTDatetimeLocal } from "@/lib/utils"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
 
@@ -28,6 +29,7 @@ interface TaskModalProps {
   onClose: () => void
   onTaskCreated: () => void
   editingTask?: Task | null
+  setEditingTask?: ((task: Task | null) => void) | any
 }
 
 declare global {
@@ -37,19 +39,19 @@ declare global {
   }
 }
 
-export function TaskModal({ isOpen, onClose, onTaskCreated, editingTask }: TaskModalProps) {
+export function TaskModal({ isOpen, onClose, onTaskCreated, editingTask, setEditingTask }: TaskModalProps) {
   const [title, setTitle] = useState("")
   const [description, setDescription] = useState("")
   const [scheduledTime, setScheduledTime] = useState("")
   const [isListening, setIsListening] = useState(false)
-  const [recognition, setRecognition] = useState<SpeechRecognition | null>(null)
+  const [recognition, setRecognition] = useState< SpeechRecognition | null>(null)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (editingTask) {
       setTitle(editingTask.title)
       setDescription(editingTask.description)
-      setScheduledTime(editingTask.scheduledTime ? new Date(editingTask.scheduledTime).toISOString().slice(0, 16) : "")
+      setScheduledTime(editingTask.scheduledTime ? toISTDatetimeLocal(editingTask.scheduledTime) : "")
     } else {
       setTitle("")
       setDescription("")
@@ -65,7 +67,7 @@ export function TaskModal({ isOpen, onClose, onTaskCreated, editingTask }: TaskM
       recognitionInstance.interimResults = false
       recognitionInstance.lang = "en-US"
 
-      recognitionInstance.onresult = (event) => {
+      recognitionInstance.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript
         processVoiceInput(transcript)
         setIsListening(false)
@@ -141,7 +143,7 @@ export function TaskModal({ isOpen, onClose, onTaskCreated, editingTask }: TaskM
       const taskData = {
         title,
         description,
-        scheduledTime: scheduledTime || undefined,
+        scheduledTime: scheduledTime,
       }
 
       if (editingTask) {
@@ -169,11 +171,20 @@ export function TaskModal({ isOpen, onClose, onTaskCreated, editingTask }: TaskM
       })
     } finally {
       setLoading(false)
+      handleClose()
     }
   }
 
+  const handleClose = () =>{
+    onClose()
+    setEditingTask(null)
+    setTitle("")
+    setDescription("")
+    setScheduledTime("")
+  }
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{editingTask ? "Edit Task" : "Create New Task"}</DialogTitle>
@@ -225,7 +236,7 @@ export function TaskModal({ isOpen, onClose, onTaskCreated, editingTask }: TaskM
           </div>
 
           <div className="flex justify-end space-x-2">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={handleClose}>
               Cancel
             </Button>
             <Button type="submit" disabled={loading}>
