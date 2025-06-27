@@ -170,7 +170,7 @@ export default function Dashboard() {
       console.error("Failed to sync with Google Calendar:", error)
     }
   }
-console.log({tasks})
+
   return (
     <div>
       <header className="bg-gray-50 shadow-sm border-b">
@@ -220,34 +220,6 @@ console.log({tasks})
         >
           <Plus className="w-6 h-6" />
         </Button>
-        {/* <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
-              aria-label="Add"
-            >
-              <Plus className="w-6 h-6" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="left" align="end" className="w-35 mr-[-4px] bg-black text-white">
-            <DropdownMenuItem className="cursor-pointer bg-black text-white h-6"
-              onClick={() => {
-                // Google Task logic
-                console.log("Create Task clicked")
-              }}
-            >
-              📝 Create Task
-            </DropdownMenuItem>
-            <DropdownMenuItem className="cursor-pointer bg-black text-white h-6"
-              onClick={() => {
-                setEditingTask(null)
-                setIsModalOpen(true)
-              }}
-            >
-              📅 Create Event
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu> */}
 
         <TaskModal
           isOpen={isModalOpen}
