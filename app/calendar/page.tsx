@@ -10,7 +10,7 @@ import { toast } from "@/hooks/use-toast"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns"
 import axios from "axios"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 interface Task {
   _id: string

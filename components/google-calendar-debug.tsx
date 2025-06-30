@@ -7,7 +7,7 @@ import { Bug, CheckCircle, XCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import axios from "axios"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
 export function GoogleCalendarDebug() {
   const [loading, setLoading] = useState(false)

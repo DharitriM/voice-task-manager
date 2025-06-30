@@ -12,8 +12,7 @@ import { toast } from "@/hooks/use-toast"
 import axios from "axios"
 import { toISTDatetimeLocal } from "@/lib/utils"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api"
-
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 interface Task {
   _id: string
   title: string
