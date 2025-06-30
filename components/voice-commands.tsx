@@ -91,8 +91,6 @@ export function VoiceCommands({
   }, []);
 
   const processVoiceCommand = async (transcript: string) => {
-    console.log("Voice command:", transcript);
-
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
