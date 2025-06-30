@@ -30,9 +30,13 @@ app.use(express.json())
 mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-  ssl: true,
-  sslValidate: true,
-})
+  tls: true,
+  tlsAllowInvalidCertificates: false, // only set to true if using self-signed certs (not for Atlas)
+}).then(() => {
+  console.log("Connected to MongoDB Atlas");
+}).catch((err) => {
+  console.error("MongoDB connection error:", err.message);
+});
 
 // User Schema
 const userSchema = new mongoose.Schema({
