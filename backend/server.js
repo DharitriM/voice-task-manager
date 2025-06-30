@@ -9,14 +9,19 @@ require("dotenv").config()
 const app = express()
 
 // Middleware
-const allowedOrigins = [
-  "https://vtm-kpho.onrender.com/", 
-  "http://localhost:3000" // (optional: for local testing)
-];
 app.use(
   cors({
-    origin: allowedOrigins,
-    credentials: true, // if using cookies
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true); // allow non-browser requests (like Postman)
+      if (
+        origin.startsWith("http://localhost:") ||
+        origin === "https://vtm-kpho.onrender.com"
+      ) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
   })
 );
 app.use(express.json())
