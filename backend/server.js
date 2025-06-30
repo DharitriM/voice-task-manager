@@ -27,9 +27,11 @@ app.use(
 app.use(express.json())
 
 // MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI || "mongodb://localhost:27017/voice-task-manager", {
+mongoose.connect(process.env.MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
+  ssl: true,
+  sslValidate: true,
 })
 
 // User Schema
@@ -132,7 +134,6 @@ const createGoogleCalendarEvent = async (user, task) => {
       resource: event,
     })
 
-    console.log("Google Calendar event created:", response.data.id)
     return response.data.id
   } catch (error) {
     console.error("Error creating Google Calendar event:", error.response?.data || error.message)
@@ -160,7 +161,6 @@ const createGoogleTask = async (user, task) => {
       },
     })
 
-    console.log("Google Task created:", response.data.id)
     return response.data.id
   } catch (error) {
     console.error("Error creating Google Task:", error.response?.data || error.message)
@@ -223,7 +223,6 @@ const updateGoogleCalendarEvent = async (user, task) => {
       resource: event,
     })
 
-    console.log("Google Calendar event updated:", task.googleEventId)
   } catch (error) {
     console.error("Error updating Google Calendar event:", error.response?.data || error.message)
   }
@@ -256,7 +255,6 @@ const updateGoogleTask = async (user, task) => {
       requestBody: updates,
     })
 
-    console.log("Google Task updated:", response.data.id)
   } catch (error) {
     console.error("Error updating Google Task:", error.response?.data || error.message)
   }
@@ -299,7 +297,6 @@ const deleteGoogleTask = async (user, taskId) => {
       task: taskId,
     })
 
-    console.log("Google Task deleted:", taskId)
   } catch (error) {
     console.error("Error deleting Google Task:", error.response?.data || error.message)
   }
