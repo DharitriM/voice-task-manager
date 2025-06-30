@@ -9,7 +9,16 @@ require("dotenv").config()
 const app = express()
 
 // Middleware
-app.use(cors())
+const allowedOrigins = [
+  "https://vtm-kpho.onrender.com/", 
+  "http://localhost:3000" // (optional: for local testing)
+];
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true, // if using cookies
+  })
+);
 app.use(express.json())
 
 // MongoDB Connection
