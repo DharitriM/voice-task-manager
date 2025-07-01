@@ -1,4 +1,5 @@
-![image](https://github.com/user-attachments/assets/5759b058-ebd5-4276-af5d-3cb99ff3b5b1)
+![image](https://github.com/user-attachments/assets/f1426951-cd73-4f4d-93eb-0e54d1ad9f02)
+
 ### **Voice Commands:**
 
 1. Click the microphone button (bottom left)
