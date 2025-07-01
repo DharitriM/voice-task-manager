@@ -119,7 +119,7 @@ export function DragDropBoard({ tasks, onStatusChange, onEditTask, onDeleteTask 
               status={status}
               className={`${statusColorsClassname[status as keyof typeof statusColorsClassname]} border-2 border-dashed min-h-[600px] rounded-lg`}
             >
-              <Card className="h-[calc(100vh-12rem)] bg-transparent border-none shadow-none">
+              <Card className="h-[calc(100vh-9.5rem)] bg-transparent border-none shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold text-gray-900">
