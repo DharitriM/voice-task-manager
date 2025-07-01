@@ -21,12 +21,12 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  useEffect(() => {
-    const token = localStorage.getItem("token")
-    if (token) {
-      router.push("/dashboard")
-    }
-  }, [router])
+  // useEffect(() => {
+  //   const token = localStorage.getItem("token")
+  //   if (token) {
+  //     router.push("/connect-google-calendar")
+  //   }
+  // }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,7 +37,6 @@ export default function AuthPage() {
       const data = isLogin ? { email, password } : { name, email, password }
 
       const response = await axios.post(`${API_BASE_URL}${endpoint}`, data)
-
       localStorage.setItem("token", response.data.token)
       localStorage.setItem("user", JSON.stringify(response.data.user))
 
@@ -46,7 +45,8 @@ export default function AuthPage() {
         description: isLogin ? "Logged in successfully!" : "Account created successfully!",
       })
 
-      router.push("/dashboard")
+      const isGoogleCalendarConnected = response.data.user.googleRefreshToken !== "" || response.data.user.googleAccessToken !== "";
+      isGoogleCalendarConnected ? router.push("/dashboard") : router.push("/connect-google-calendar")
     } catch (error: any) {
       toast({
         title: "Error",

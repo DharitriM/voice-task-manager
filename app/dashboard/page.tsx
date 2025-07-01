@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Plus, LogOut, Calendar } from "lucide-react"
+import { Plus, LogOut, Calendar, CheckCircle } from "lucide-react"
 import { TaskModal } from "@/components/task-modal"
 import { DragDropBoard } from "@/components/drag-drop-board"
 import { toast } from "@/hooks/use-toast"
@@ -12,7 +12,6 @@ import { VoiceCommands } from "@/components/voice-commands"
 import { NotificationSystem } from "@/components/notification-system"
 import { GoogleCalendarIntegration } from "@/components/google-calendar-integration"
 import { GoogleCalendarDebug } from "@/components/google-calendar-debug"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -31,10 +30,10 @@ export default function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [user, setUser] = useState<any>(null)
-   const [isSlideOpen, setIsSlideOpen] = useState<boolean>(false)
   const router = useRouter()
 
   // Add state for Google Calendar connection
+  const [isConnecting, setIsConnecting] = useState(false)
   const [isGoogleCalendarConnected, setIsGoogleCalendarConnected] = useState(false)
 
   useEffect(() => {
@@ -48,6 +47,9 @@ export default function Dashboard() {
 
     if (userData) {
       setUser(JSON.parse(userData))
+
+      const isConnected = JSON.parse(userData).googleAccessToken !== "" || JSON.parse(userData).googleRefreshToken !== "";
+      setIsGoogleCalendarConnected(isConnected)
     }
 
     fetchTasks()
@@ -171,19 +173,90 @@ export default function Dashboard() {
     }
   }
 
+    const connectGoogleCalendar = async () => {
+    try {
+      setIsConnecting(true)
+      const token = localStorage.getItem("token")
+
+      // Get Google OAuth URL
+      const response = await axios.get(`${API_BASE_URL}/auth/google`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+
+      // Open Google OAuth in new window
+      const authWindow = window.open(
+        response.data.authUrl,
+        "google-auth",
+        "width=500,height=600,scrollbars=yes,resizable=yes",
+      )
+
+      // Listen for messages from the auth window
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return
+
+        if (event.data.type === "GOOGLE_AUTH_SUCCESS") {
+          authWindow?.close()
+          setIsGoogleCalendarConnected(true)
+          toast({
+            title: "Success",
+            description: "Google Calendar connected successfully!",
+          })
+          window.removeEventListener("message", handleMessage)
+        } else if (event.data.type === "GOOGLE_AUTH_ERROR") {
+          authWindow?.close()
+          toast({
+            title: "Error",
+            description: "Failed to connect Google Calendar",
+            variant: "destructive",
+          })
+          window.removeEventListener("message", handleMessage)
+        }
+      }
+
+      window.addEventListener("message", handleMessage)
+
+      // Fallback: Check if window is closed
+      const checkClosed = setInterval(() => {
+        if (authWindow?.closed) {
+          clearInterval(checkClosed)
+          window.removeEventListener("message", handleMessage)
+          // Don't automatically assume success here
+        }
+      }, 1000)
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to connect Google Calendar",
+        variant: "destructive",
+      })
+    } finally {
+      setIsConnecting(false)
+    }
+  }
+
   return (
     <div>
       <header className="bg-gray-50 shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold text-gray-900">Voice Task Manager</h1>
             <div className="flex items-center space-x-4">
               <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-              <Button variant="outline" onClick={() => router.push("/calendar")}>
+              {isGoogleCalendarConnected ? (
+                <div className="flex items-center space-x-2 text-green-600">
+                  <CheckCircle className="w-5 h-5" />
+                  <span>Connected to Google Calendar</span>
+                </div>
+              ) : (
+                <Button className="hover:bg-black hover:text-white" variant="outline" onClick={connectGoogleCalendar} disabled={isConnecting}>
+                  {isConnecting ? "Connecting..." : "Connect Google Calendar"}
+                </Button>
+              )}
+              <Button className="hover:bg-black hover:text-white" variant="outline" onClick={() => router.push("/calendar")}>
                 <Calendar className="w-4 h-4 mr-2" />
                 Calendar
               </Button>
-              <Button variant="outline" onClick={handleLogout}>
+              <Button className="hover:bg-black hover:text-white" variant="outline" onClick={handleLogout}>
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
               </Button>
@@ -193,13 +266,13 @@ export default function Dashboard() {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-4 flex gap-6">
+        {/* <div className="mb-4 flex gap-6">
           <GoogleCalendarIntegration
             isConnected={isGoogleCalendarConnected}
             onConnectionChange={setIsGoogleCalendarConnected}
           />
           <GoogleCalendarDebug />
-        </div>
+        </div> */}
 
         <DragDropBoard
           tasks={tasks}

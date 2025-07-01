@@ -338,7 +338,7 @@ app.post("/api/auth/register", async (req, res) => {
     res.status(201).json({
       message: "User created successfully",
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, googleAccessToken: user.googleAccessToken || "", googleRefreshToken: user.googleRefreshToken || "" },
     })
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message })
@@ -369,7 +369,7 @@ app.post("/api/auth/login", async (req, res) => {
     res.json({
       message: "Login successful",
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, googleAccessToken: user.googleAccessToken || "", googleRefreshToken: user.googleRefreshToken || "" },
     })
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message })

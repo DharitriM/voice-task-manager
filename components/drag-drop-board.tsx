@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import {
   DndContext,
@@ -17,6 +16,7 @@ import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { TaskCard } from "./task-card"
+import {  statusColorsClassname } from "@/lib/utils"
 
 interface Task {
   _id: string
@@ -58,13 +58,6 @@ export function DragDropBoard({ tasks, onStatusChange, onEditTask, onDeleteTask 
     inprogress: "In Progress",
     done: "Done",
     blocked: "Blocked",
-  }
-
-  const statusColors = {
-    todo: "border-blue-200 bg-blue-50",
-    inprogress: "border-yellow-200 bg-yellow-50",
-    done: "border-green-200 bg-green-50",
-    blocked: "border-red-200 bg-red-50",
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -124,9 +117,9 @@ export function DragDropBoard({ tasks, onStatusChange, onEditTask, onDeleteTask 
           <div key={status} className="space-y-4">
             <DroppableStatusColumn
               status={status}
-              className={`${statusColors[status as keyof typeof statusColors]} border-2 border-dashed min-h-[600px] rounded-lg`}
+              className={`${statusColorsClassname[status as keyof typeof statusColorsClassname]} border-2 border-dashed min-h-[600px] rounded-lg`}
             >
-              <Card className="h-full bg-transparent border-none shadow-none">
+              <Card className="h-[calc(100vh-12rem)] bg-transparent border-none shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg font-semibold text-gray-900">

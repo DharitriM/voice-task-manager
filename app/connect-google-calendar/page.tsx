@@ -2,20 +2,17 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Calendar, CheckCircle } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import axios from "axios"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useRouter } from "next/navigation"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
-interface GoogleCalendarIntegrationProps {
-  isConnected: boolean
-  onConnectionChange: (connected: boolean) => void
-}
-
-export function GoogleCalendarIntegration({ isConnected, onConnectionChange }: GoogleCalendarIntegrationProps) {
-  const [loading, setLoading] = useState(false)
+export default function GoogleCalendarIntegration() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(true);
 
   const connectGoogleCalendar = async () => {
     try {
@@ -40,12 +37,13 @@ export function GoogleCalendarIntegration({ isConnected, onConnectionChange }: G
 
         if (event.data.type === "GOOGLE_AUTH_SUCCESS") {
           authWindow?.close()
-          onConnectionChange(true)
+        //   onConnectionChange(true)
           toast({
             title: "Success",
             description: "Google Calendar connected successfully!",
           })
           window.removeEventListener("message", handleMessage)
+          router.push("/dashboard")
         } else if (event.data.type === "GOOGLE_AUTH_ERROR") {
           authWindow?.close()
           toast({
@@ -78,27 +76,33 @@ export function GoogleCalendarIntegration({ isConnected, onConnectionChange }: G
     }
   }
 
+  const handleClose = () => {
+    setIsOpen(false)
+    router.push("/dashboard")
+  }
+
   return (
-    <Card className="mb-6 flex flex-col">
-      <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <Calendar className="w-5 h-5" />
-          <span>Google Calendar Integration</span>
-        </CardTitle>
-        <CardDescription>Sync your tasks with Google Calendar and get reminders</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {isConnected ? (
-          <div className="flex items-center space-x-2 text-green-600">
-            <CheckCircle className="w-5 h-5" />
-            <span>Connected to Google Calendar</span>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Google Calendar Integration</DialogTitle>
+        </DialogHeader>
+
+          <div>
+            <p className="text-sm text-muted-foreground">
+              Sync your tasks with Google Calendar and get reminders
+            </p>
           </div>
-        ) : (
-          <Button onClick={connectGoogleCalendar} disabled={loading}>
-            {loading ? "Connecting..." : "Connect Google Calendar"}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
+
+          <div className="flex justify-end space-x-2">
+            <Button onClick={connectGoogleCalendar} disabled={loading}>
+                {loading ? "Connecting..." : "Connect Google Calendar"}
+            </Button>
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancel
+            </Button>
+          </div>
+      </DialogContent>
+    </Dialog>
   )
 }

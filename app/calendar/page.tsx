@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Trash2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths } from "date-fns"
 import axios from "axios"
+import NotionCalendar from "@/components/notion-calendar"
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -26,6 +27,7 @@ export default function CalendarPage() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDate, setSelectedDate] = useState(new Date())
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const router = useRouter()
 
   // Date range: 3 years back and forth
@@ -148,7 +150,7 @@ export default function CalendarPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Calendar Grid */}
           <div className="lg:col-span-2">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>{format(currentDate, "MMMM yyyy")}</CardTitle>
@@ -215,13 +217,54 @@ export default function CalendarPage() {
                             </Badge>
                           </div>
                         )}
+                        {dayTasks.length > 0 && (
+                            <div className="mt-1 space-y-1 overflow-y-auto max-h-12">
+                              {dayTasks.slice(0, 2).map((task) => (
+                                <div
+                                  key={task._id}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // Prevent calendar date selection
+                                    setSelectedTask(task); // Open modal
+                                  }}
+                                  className="text-xs truncate px-1 py-0.5 rounded bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                                  title={task.title}
+                                >
+                                  {task.title}
+                                </div>
+                              ))}
+                              {dayTasks.length > 2 && (
+                                <div className="text-[10px] text-gray-500">+{dayTasks.length - 2} more</div>
+                              )}
+                            </div>
+                          )}
                       </div>
                     )
                   })}
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
+            <NotionCalendar tasks={tasks} onTaskClick={setSelectedTask} setSelectedDate={setSelectedDate} />
           </div>
+          {selectedTask && (
+           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md p-3 relative">
+                <button
+                  className="absolute top-1 right-2 text-gray-500 hover:text-gray-800"
+                  onClick={() => setSelectedTask(null)}
+                >
+                  ✕
+                </button>
+                <h2 className="text-lg font-semibold mb-2">{selectedTask.title}</h2>
+                <p className="text-sm text-gray-600 mb-2">{selectedTask.description}</p>
+                <div className="flex justify-between items-center mb-2">
+                  <Badge className={getStatusColor(selectedTask.status)}>{selectedTask.status}</Badge>
+                  <span className="text-xs text-gray-500">
+                    {format(new Date(selectedTask.scheduledTime!), "PPPp")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Selected Date Tasks */}
           <div>
@@ -233,19 +276,45 @@ export default function CalendarPage() {
                 {selectedDateTasks.length === 0 ? (
                   <p className="text-gray-500 text-center py-4">No tasks scheduled for this date</p>
                 ) : (
-                  <div className="space-y-3">
+                  // <div className="space-y-3">
+                  //   {selectedDateTasks.map((task) => (
+                  //     <div key={task._id} className="border rounded-lg p-3">
+                  //       <div className="flex items-start justify-between mb-2">
+                  //         <h4 className="font-medium text-sm">{task.title}</h4>
+                  //         <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task._id)}>
+                  //           <Trash2 className="w-3 h-3" />
+                  //         </Button>
+                  //       </div>
+                  //       <p className="text-xs text-gray-600 mb-2">{task.description}</p>
+                  //       <div className="flex items-center justify-between">
+                  //         <Badge className={getStatusColor(task.status)}>{task.status}</Badge>
+                  //         <span className="text-xs text-gray-500">
+                  //           {format(new Date(task.scheduledTime!), "h:mm a")}
+                  //         </span>
+                  //       </div>
+                  //     </div>
+                  //   ))}
+                  // </div>
+                  <div className="space-y-4">
                     {selectedDateTasks.map((task) => (
-                      <div key={task._id} className="border rounded-lg p-3">
-                        <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-sm">{task.title}</h4>
-                          <Button variant="ghost" size="sm" onClick={() => handleDeleteTask(task._id)}>
-                            <Trash2 className="w-3 h-3" />
+                      <div
+                        key={task._id}
+                        className="p-4 bg-white border rounded-lg shadow-sm hover:shadow transition cursor-pointer"
+                        onClick={() => setSelectedTask(task)}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="font-semibold text-sm">{task.title}</h4>
+                          <Button variant="ghost" size="icon" onClick={(e) => {
+                            e.stopPropagation()
+                            handleDeleteTask(task._id)
+                          }}>
+                            <Trash2 className="w-4 h-4 text-red-500" />
                           </Button>
                         </div>
-                        <p className="text-xs text-gray-600 mb-2">{task.description}</p>
-                        <div className="flex items-center justify-between">
+                        <p className="text-xs text-gray-500 line-clamp-2">{task.description}</p>
+                        <div className="flex justify-between items-center mt-2">
                           <Badge className={getStatusColor(task.status)}>{task.status}</Badge>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-gray-400">
                             {format(new Date(task.scheduledTime!), "h:mm a")}
                           </span>
                         </div>
