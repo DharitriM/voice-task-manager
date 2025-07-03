@@ -236,12 +236,12 @@ export default function Dashboard() {
 
   return (
     <div>
-      <header className="bg-gray-50 shadow-sm border-b">
+      <header className="bg-gray-100 shadow-sm border-b">
         <div className="max-w-9xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <h1 className="text-2xl font-bold text-gray-900">Voice Task Manager</h1>
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
+              <span className="text-md text-gray-700">Welcome, {user?.name}</span>
               {isGoogleCalendarConnected ? (
                 <div className="flex items-center space-x-2 text-green-600">
                   <CheckCircle className="w-5 h-5" />
@@ -253,11 +253,11 @@ export default function Dashboard() {
                 </Button>
               )}
               <Button className="hover:bg-black hover:text-white" variant="outline" onClick={() => router.push("/calendar")}>
-                <Calendar className="w-4 h-4 mr-2" />
+                <Calendar className="w-4 h-4" />
                 Calendar
               </Button>
               <Button className="hover:bg-black hover:text-white" variant="outline" onClick={handleLogout}>
-                <LogOut className="w-4 h-4 mr-2" />
+                <LogOut className="w-4 h-4" />
                 Logout
               </Button>
             </div>
