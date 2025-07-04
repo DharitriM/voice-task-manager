@@ -16,7 +16,8 @@ export default function GoogleCallbackPage() {
 
       if (error) {
         // Send error message to parent window
-        window.opener?.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, window.location.origin)
+        // window.opener?.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, window.location.origin)
+        window.opener?.postMessage({ type: "GOOGLE_AUTH_ERROR", error }, "*")
         window.close()
         return
       }
@@ -33,13 +34,19 @@ export default function GoogleCallbackPage() {
           )
 
           // Send success message to parent window
-          window.opener?.postMessage({ type: "GOOGLE_AUTH_SUCCESS" }, window.location.origin)
+          // window.opener?.postMessage({ type: "GOOGLE_AUTH_SUCCESS" }, window.location.origin)
+          window.opener?.postMessage({ type: "GOOGLE_AUTH_SUCCESS" }, "*")
+
           window.close()
         } catch (error: any) {
           console.error("Google OAuth callback error:", error?.response?.data || error.message)
+          // window.opener?.postMessage(
+          //   { type: "GOOGLE_AUTH_ERROR", error: error?.response?.data?.message || error.message },
+          //   window.location.origin
+          // )
           window.opener?.postMessage(
             { type: "GOOGLE_AUTH_ERROR", error: error?.response?.data?.message || error.message },
-            window.location.origin
+            "*"
           )
           window.close()
         }

@@ -54,7 +54,7 @@ export function NotificationSystem({ tasks }: NotificationSystemProps) {
       new Notification(`Task Reminder: ${task.title}`, {
         body: `Your task "${task.title}" is scheduled to start in 30 minutes`,
         icon: "/favicon.ico",
-        tag: task._id, // Prevent duplicate notifications
+        tag: task._id,
       })
     }
 
